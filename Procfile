@@ -1,4 +1,1 @@
-.DS_Store
-__pycashe__/
-.env
-db.sqlite3
+web: gunicorn conf.wsgi --log-file -
