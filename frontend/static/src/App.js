@@ -11,27 +11,84 @@ class App extends Component {
     super(props);
     this.state = {
       title: '',
-      image: null
+      image: null,
+      recipes: []
     };
     this.handleChange = this.handleChange.bind(this);
-    this.handleImageChange = this.handleImageChange.bind(this)
+    this.handleImageChange = this.handleImageChange.bind(this);
+    this.handleSubmit = this.handleSubmit.bind(this);
   }
 
-  handleChange() {
-
+  handleChange(e) {
+    this.setState({[e.target.name]: e.target.value});
   }
 
-  handleImageChange() {
+  handleImageChange(e) {
+    let file = e.target.files[0];
+    this.setState({image: file});
 
+    let reader = new FileReader();
+    reader.onloadend = () => {
+      this.setState({preview: reader.result});
+    };
+    reader.readAsDataURL(file);
   }
+
+  handleSubmit (e) {
+    e.preventDefault();
+
+    let formData = new FormData();
+    formData.append('title', this.state.title);
+    formData.append('image', this.state.image);
+
+    axios.post('/api/v1/recipes/', formData, {
+      headers: {
+        'content-type': 'multipart/form-data'
+    }
+  })
+    .then(res => {
+      let recipes = [...this.state.recipes];
+
+      this.setState({recipes: recipes, title: '', preview: null, image: null})
+  })
+    .catch(error => {
+      console.log(error)
+    });
+  }
+
+  componentDidMount() {
+      axios.get('/api/v1/recipes/')
+      .then(res => {
+        this.setState({recipes: res.data});
+      })
+      .catch(error => {
+
+      });
+    }
 
   render() {
+    let recipes = this.state.recipes.map(recipe => (
+      <li>
+      <p>{recipe.title}</p>
+      <p>{recipe.created_by}</p>
+    <img src={recipe.image} alt=""/>
+  </li>
+    ))
     return (
-      <form>
+      <React.Fragment>
+      <form onSubmit={this.handleSubmit}>
         <input type="text" name='title' value= {this.state.title} onChange={this.handleChange} />
-        <input type="file" name='image'  onChange={this.handleImageChange} />
+        <input type="file" name='image'  onChange={this.handleImageChange}/>
+        {this.state.image ? (
+          <img src={this.state.preview} alt='preview'/>
+        ) : (
+          null
+        )}
         <button>Upload</button>
+        <ul>{recipes}</ul>
+
       </form>
+      </React.Fragment>
     )
   }
 }
